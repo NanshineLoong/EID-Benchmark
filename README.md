@@ -1,7 +1,5 @@
 # EID-Benchmark
 
-## Overview
-
 Medical diagnosis requires not just reasoning ability, but also the skill to systematically gather relevant clinical information through patient interviews and diagnostic tests. This benchmark evaluates:
 
 - **Information Collection Rate (ICR)**: How effectively does the model gather available clinical evidence?
@@ -222,11 +220,11 @@ eid-benchmark/
 If you use this benchmark in your research, please cite:
 
 ```bibtex
-@article{eid2025,
+@article{strong2026,
   title={Strong Reasoning Isn't Enough: Evaluating Evidence Elicitation in Interactive Diagnosis},
   author={Zhuohan Long, Zhongyu Wei},
   journal={arXiv preprint},
-  year={2025}
+  year={2026}
 }
 ```
 
