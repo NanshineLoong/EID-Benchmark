@@ -105,15 +105,15 @@ Examples:
         help="Model for patient simulator (default: same as doctor)",
     )
     parser.add_argument(
-        "--measurement-model",
-        help="Model for measurement simulator (default: same as doctor)",
+        "--reporter-model",
+        help="Model for reporter simulator (default: same as doctor)",
     )
     parser.add_argument(
         "--annotator-model",
         help="Model for evaluation judge (default: same as doctor)",
     )
 
-    # Model arguments - SC/REFINE specific roles
+    # SC/REFINE specific roles
     parser.add_argument(
         "--summarizer-model",
         help="Model for summarizer role in SC/REFINE modes (default: same as doctor)",
@@ -144,8 +144,8 @@ Examples:
     parser.add_argument(
         "--max-workers",
         type=int,
-        default=10,
-        help="Maximum parallel workers for concurrent evaluation (default: 10)",
+        default=1,
+        help="Maximum parallel workers for concurrent evaluation ",
     )
     parser.add_argument(
         "--task-workers",
@@ -226,7 +226,7 @@ def run_evaluations(args: argparse.Namespace) -> None:
                 mode=mode,
                 doctor_model=doctor_model,
                 patient_model=args.patient_model,
-                measurement_model=args.measurement_model,
+                reporter_model=args.reporter_model,
                 annotator_model=args.annotator_model,
                 summarizer_model=args.summarizer_model,
                 diagnostician_model=args.diagnostician_model,

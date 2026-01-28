@@ -1,233 +1,111 @@
 # EID-Benchmark
 
-Medical diagnosis requires not just reasoning ability, but also the skill to systematically gather relevant clinical information through patient interviews and diagnostic tests. This benchmark evaluates:
+<p align="center">
+  <a href="http://arxiv.org/abs/2601.19773">
+    <img src="https://img.shields.io/badge/Paper-arXiv%3A2601.19773-b31b1b.svg" />
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
+  </a>
+</p>
 
-- **Information Collection Rate (ICR)**: How effectively does the model gather available clinical evidence?
-- **Success Rate (SR)**: How accurately does the model arrive at the correct diagnosis?
-- **Evidence-Outcome Correlation**: Does collecting more evidence actually improve diagnostic accuracy?
-
-## Framework
-
-The evaluation framework simulates realistic clinical scenarios where the doctor agent interacts with patient and measurement simulators to gather evidence before making a diagnosis:
-
-<div align="center">
-<img src="assets/benchmark.png" alt="EID Benchmark Framework" width="800"/>
-</div>
-
-The framework consists of:
-- **Patient Simulator**: Responds to doctor's queries based on case information
-- **Measurement Simulator**: Returns lab/imaging results when requested
-- **Doctor Agent**: Collects evidence through multi-turn interactions and provides diagnosis
-- **Evaluator**: Computes ICR (coverage of available evidence) and SR (diagnostic accuracy)
-
-## Evaluation Modes
-
-| Mode | Description |
-|------|-------------|
-| `cot` | Chain-of-Thought: Single-pass diagnosis from case description |
-| `roleplay` | Basic multi-turn interaction with patient/measurement simulators |
-| `react` | ReAct: Explicit reasoning before each action |
-| `sc` | Summarized-Conversation: Summarizer + Diagnostician pipeline |
-| `refine` | REFINE: Verification loop with feedback for incomplete evidence |
-
-### REFINE: Multi-Agent Diagnostic Framework
-
-The REFINE mode implements a sophisticated multi-agent system with evidence verification and iterative refinement:
+The evaluation framework simulates realistic clinical workflows where a doctor must interact with **patient** and **reporter** simulators to gather evidence before making a diagnosis.
 
 <div align="center">
-<img src="assets/refine.png" alt="REFINE Framework" width="800"/>
+  <img src="assets/benchmark.png" alt="EID Benchmark Framework" width="800"/>
 </div>
 
-**Key components:**
-- **Information Collector**: Interacts with patient/measurement to gather evidence
-- **Evidence Organizer**: Structures collected information into coherent summaries
-- **Diagnosis Reasoner**: Generates diagnostic hypotheses based on evidence
-- **Diagnosis Verifier**: Validates hypotheses and identifies missing evidence
 
+## Table of Contents
 
-## Installation
+- [Quickstart](#quickstart)
+- [Running Evaluations](#running-evaluations)
+- [Datasets](#datasets)
+  - [Add your own dataset](#add-your-own-dataset)
+- [Citation](#citation)
+- [Contact](#contact)
+
+## Quickstart
+
+### 1) Install
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/eid-benchmark.git
+git clone https://github.com/NanshineLoong/EID-Benchmark.git
 cd eid-benchmark
 
-# Create virtual environment with uv (recommended)
 uv venv --python 3.12
 source .venv/bin/activate
-
-# Install dependencies
 uv pip install -e .
-
 ```
 
-## Configuration
+### 2) Configure API
 
-1. Copy the example environment file:
 ```bash
 cp .env.example .env
+# edit .env with your endpoint:
+# OPENAI_API_BASE_URL=...
+# OPENAI_API_KEY=...
 ```
 
-2. Edit `.env` with your API credentials:
-```bash
-# OpenAI-Compatible API Configuration
-OPENAI_API_BASE_URL=https://api.openai.com/v1
-OPENAI_API_KEY=your-api-key-here
-```
-
-## Quick Start
-
-### Running Evaluations
+### 3) Run
 
 ```bash
-# Basic CoT evaluation
-eid-eval --datasets medqa --modes cot \
-    --doctor-model gpt-5-mini \
-    --max-items 2
-
-# Multi-turn roleplay
-eid-eval --datasets diagnosisarena --modes roleplay \
-    --doctor-model gpt-5-mini \
-    --max-turns 16 \
-    --max-items 2
-
-# ReAct with explicit reasoning
-eid-eval --datasets medqa diagnosisarena --modes react \
-    --doctor-model gpt-5-mini \
-    --max-turns 12
-
-# Full evaluation with parallel workers
-eid-eval --datasets medqa diagnosisarena clinicalbench rarearena derm \
-    --modes cot roleplay react sc refine \
-    --doctor-model gpt-5-mini \
-    --max-turns 8 12 16 \
-    --max-items 200 \
-    --max-workers 50
+eid-eval --datasets medqa --modes roleplay \
+  --doctor-model gpt-5-mini \
+  --max-turns 8 \
+  --max-items 1
 ```
+After running, you should see a result summary and per-case logs saved under `results/`.
 
-> **Note**: The `clinicalbench` dataset is not publicly available due to distribution restrictions.
-
-### Model Configuration
-
-Models are specified by name only (e.g., `gpt-5-mini`). The API endpoint is configured via environment variables.
-
-**Role-specific models:**
-```bash
-# Different models for different roles
-eid-eval --datasets diagnosisarena --modes roleplay \
-    --doctor-model gpt-5-mini \
-    --patient-model gpt-5-mini \
-    --measurement-model gpt-5-mini \
-    --max-turns 16
-```
-
-**SC/REFINE specific roles:**
-```bash
-# Specify summarizer, diagnostician, and verifier models
-eid-eval --datasets diagnosisarena --modes sc refine \
-    --doctor-model gpt-5-mini \
-    --summarizer-model gpt-5-mini \
-    --diagnostician-model gpt-5-mini \
-    --verifier-model gpt-5-mini \
-    --max-turns 16
-```
-
-### Analyzing Results
+## Running Evaluations
 
 ```bash
-# E1: Overall performance summary with scatter plots
-eid-analyze e1 --datasets medqa diagnosisarena \
-    --modes cot react refine \
-    --models gpt-5-mini \
-    --max-turns 16 \
-    --fig-dir figures --excel results/summary.xlsx
-
-# E2: Turn limit experiments
-eid-analyze e2 --datasets diagnosisarena \
-    --modes react refine \
-    --models gpt-5-mini \
-    --max-turns 4 8 12 16 \
-    --fig-dir figures
-
-# E3: Coverage vs outcome analysis
-eid-analyze e3 --datasets diagnosisarena rarearena \
-    --modes react refine \
-    --models gpt-5-mini \
-    --max-turns 16 \
-    --fig-dir figures
-
-# E4: Ablation study
-eid-analyze e4 --datasets medqa diagnosisarena \
-    --modes roleplay react refine \
-    --models gpt-5-mini \
-    --max-turns 16 \
-    --baseline roleplay --md figures/ablation.md
-
-# Average turns analysis
-eid-analyze turns --datasets medqa diagnosisarena \
-    --modes roleplay react sc refine \
-    --models gpt-5-mini \
-    --max-turns 16 \
-    --md figures/turns.md
+# Full evaluation across datasets and strategies
+eid-eval --datasets medqa diagnosisarena rarearena derm \
+  --modes cot roleplay react sc refine \
+  --doctor-model gpt-5-mini \
+  --skip-existing \
+  --max-turns 16 \
+  --max-items 200 \
+  --max-workers 50
 ```
 
-## Results
 
-The benchmark demonstrates that strong reasoning capabilities alone are insufficient for interactive diagnosis. Systematic evidence elicitation significantly improves diagnostic accuracy:
+## Datasets
+All available datasets are placed under `data/`.
 
-<div align="center">
-<img src="assets/experiment.png" alt="Experimental Results" width="800"/>
-</div>
+- **[AgentClinic-MedQA](https://github.com/SamuelSchmidgall/AgentClinic)**: `data/agentclinic_medqa_segmented.jsonl`.
+- **[DiagnosisArena](https://huggingface.co/datasets/shzyk/DiagnosisArena)**: `data/DiagnosisArena_segmented.jsonl`.
+- **[RareArena](https://github.com/zhao-zy15/RareArena)**: `data/RDC_segmented.jsonl`.
+- **[Derm (CRAFT-MD)](https://github.com/rajpurkarlab/craft-md)**: `data/derm_segmented.jsonl`.
+- **[ClinicalBench](https://github.com/WeixiangYAN/ClinicalLab)**: we do **not** redistribute a segmented version here，please follow the original repo’s instructions to access the data.
 
-**Key findings:**
-- **REFINE consistently outperforms baselines** across all datasets, showing the importance of verification-guided evidence collection
-- **ICR-SR correlation**: Higher information collection rates strongly correlate with diagnostic success
-- **Model differences**: Larger models (e.g., GPT-5-mini) show better reasoning but may still benefit from structured evidence elicitation
+### Add your own dataset
 
-See the table above for detailed performance metrics across different models and interactive strategies.
+You can generate evidence-based dataset from a `.jsonl` dataset by running the following command:
 
-## Project Structure
-
-```
-eid-benchmark/
-├── src/eid/                    # Main evaluation framework
-│   ├── agents/                 # CAMEL ChatAgent wrappers
-│   ├── scenarios/              # Evaluation scenarios (cot, roleplay, etc.)
-│   ├── datasets/               # Dataset loaders
-│   ├── metrics/                # Evaluation metrics
-│   ├── prompts/                # Prompt templates
-│   ├── config.py               # Configuration management
-│   ├── benchmark.py            # Main Benchmark class
-│   └── cli.py                  # Command-line interface
-├── analyze/                    # Analysis and visualization tools
-│   ├── cli.py                  # Analysis CLI (E1-E4 experiments)
-│   ├── runner.py               # Result loading and aggregation
-│   ├── metrics.py              # Coverage computation
-│   ├── plots.py                # Visualization functions
-│   └── models.py               # Data models
-├── data/                       # Dataset files (JSONL format)
-├── results/                    # Evaluation outputs
-├── figures/                    # Generated plots
-├── .vscode/                    # VSCode debug configurations
-├── .env.example                # Environment template
-├── pyproject.toml              # Project configuration
-└── README.md
+```bash
+eid-segment --dataset path-to-your-jsonl \
+  --fields case_vignette \
+  --model gpt-5-mini \
+  --max-items 200 \
+  --workers 10 \
+  --out your-output-dataset-file
 ```
 
 
 ## Citation
 
-If you use this benchmark in your research, please cite:
-
 ```bibtex
-@article{strong2026,
+@article{long2026strong,
   title={Strong Reasoning Isn't Enough: Evaluating Evidence Elicitation in Interactive Diagnosis},
-  author={Zhuohan Long, Zhongyu Wei},
-  journal={arXiv preprint},
+  author={Long, Zhuohan and Bao, Zhijie and Wei, Zhongyu},
+  journal={arXiv preprint arxiv: 2601.19773},
   year={2026}
 }
 ```
 
-## License
+## Contact
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+You can propose issues if any problems on this code hub.
+For questions, feel free to reach out via email at [zhlong24@m.fudan.edu.cn](mailto:zhlong24@m.fudan.edu.cn)

@@ -91,8 +91,8 @@ class PromptManager:
             "   [RESPONSE] followed by a natural statement indicating you are unsure or do not recall."
         )
 
-    def get_measurement_system_prompt(self) -> str:
-        """Get system prompt for measurement/test simulator."""
+    def get_reporter_system_prompt(self) -> str:
+        """Get system prompt for reporter simulator."""
         return (
             "You are a specialized module named 'Measurement' responsible for reporting "
             "test results to the physician.\n"
@@ -307,8 +307,8 @@ class PromptManager:
         """
         return f"Doctor said:\n{doctor_message}\n\nPatient:"
 
-    def get_measurement_turn_instruction(self, doctor_message: str) -> str:
-        """Get instruction for measurement's turn.
+    def get_reporter_turn_instruction(self, doctor_message: str) -> str:
+        """Get instruction for reporter's turn.
 
         Args:
             doctor_message: Doctor's test request

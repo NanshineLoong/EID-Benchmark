@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 from eid.config import ModelConfig
 from eid.datasets import Dataset, DataItem, load_dataset
-from eid.metrics import Metric, get_metric
+from eid.metrics import Metric, get_metric, compute_coverage
 from eid.scenarios import get_scenario
 from eid.scenarios.base import BaseScenario, CaseInput, ScenarioResult
 
@@ -151,6 +151,13 @@ class Benchmark:
         # Evaluate result
         eval_result, is_correct = self.metric.compare(result.answer, item.answer)
 
+        # Compute information coverage
+        coverage_result = compute_coverage(
+            trace=result.trace,
+            patient_facts=item.patient_facts,
+            exam_facts=item.exam_facts,
+        )
+
         return {
             "case_id": item.case_id,
             "prediction": result.answer,
@@ -158,6 +165,15 @@ class Benchmark:
             "is_correct": is_correct,
             "trace": result.trace,
             "metadata": result.metadata,
+            "coverage": {
+                "information_coverage_rate": coverage_result.information_coverage_rate,
+                "patient_coverage": coverage_result.patient_coverage,
+                "exam_coverage": coverage_result.exam_coverage,
+                "ground_truth_patient_facts": coverage_result.ground_truth_patient_facts,
+                "ground_truth_exam_facts": coverage_result.ground_truth_exam_facts,
+                "collected_patient_facts": coverage_result.collected_patient_facts,
+                "collected_exam_facts": coverage_result.collected_exam_facts,
+            },
             **eval_result,
         }
 
@@ -170,11 +186,18 @@ class Benchmark:
         Returns:
             Evaluation result dictionary without trace and metadata
         """
-        return {
+        result = {
             k: v
             for k, v in full_result.items()
-            if k not in ("trace", "metadata")
+            if k not in ("trace", "metadata", "coverage")
         }
+        coverage = full_result.get("coverage", {})
+        result["information_coverage_rate"] = coverage.get(
+            "information_coverage_rate", 0.0
+        )
+        result["patient_coverage"] = coverage.get("patient_coverage", 0.0)
+        result["exam_coverage"] = coverage.get("exam_coverage", 0.0)
+        return result
 
     def _save_trace(self, path: Path, result: dict[str, Any]) -> None:
         """Save trace to JSON file."""
@@ -187,7 +210,7 @@ def run_evaluation(
     mode: str,
     doctor_model: str,
     patient_model: str | None = None,
-    measurement_model: str | None = None,
+    reporter_model: str | None = None,
     annotator_model: str | None = None,
     summarizer_model: str | None = None,
     diagnostician_model: str | None = None,
@@ -205,19 +228,16 @@ def run_evaluation(
         mode: Evaluation mode (cot, roleplay, react, sc, refine)
         doctor_model: Model name for doctor
         patient_model: Model name for patient (optional)
-        measurement_model: Model name for measurement (optional)
+        reporter_model: Model name for reporter (optional)
         annotator_model: Model name for annotator (optional)
         summarizer_model: Model name for summarizer (optional, SC/REFINE)
         diagnostician_model: Model name for diagnostician (optional, SC/REFINE)
         verifier_model: Model name for verifier (optional, REFINE)
-        max_items: Maximum items to evaluate
-        max_turns: Maximum interaction turns
-        max_workers: Maximum parallel workers
-        output_dir: Output directory
+        max_items: Maximum items to evaluate (optional)
+        max_turns: Maximum interaction turns (default: 16)
+        max_workers: Maximum parallel workers (default: 10)
+        output_dir: Output directory (default: results)
         dataset_path: Custom dataset path (optional)
-
-    Returns:
-        Summary statistics dictionary
     """
     from eid.config import load_config, ModelConfig
 
@@ -233,20 +253,20 @@ def run_evaluation(
     patient_config = (
         ModelConfig.from_string(patient_model) if patient_model else doctor_config
     )
-    measurement_config = (
-        ModelConfig.from_string(measurement_model) if measurement_model else doctor_config
+    reporter_config = (
+        ModelConfig.from_string(reporter_model) if reporter_model else doctor_config
     )
     annotator_config = (
         ModelConfig.from_string(annotator_model) if annotator_model else doctor_config
     )
     summarizer_config = (
-        ModelConfig.from_string(summarizer_model) if summarizer_model else None
+        ModelConfig.from_string(summarizer_model) if summarizer_model else doctor_config
     )
     diagnostician_config = (
-        ModelConfig.from_string(diagnostician_model) if diagnostician_model else None
+        ModelConfig.from_string(diagnostician_model) if diagnostician_model else doctor_config
     )
     verifier_config_obj = (
-        ModelConfig.from_string(verifier_model) if verifier_model else None
+        ModelConfig.from_string(verifier_model) if verifier_model else doctor_config
     )
 
     # Create scenario
@@ -255,7 +275,7 @@ def run_evaluation(
         dataset_name=dataset_name,
         doctor_config=doctor_config,
         patient_config=patient_config,
-        measurement_config=measurement_config,
+        reporter_config=reporter_config,
         max_turns=max_turns,
         summarizer_config=summarizer_config,
         diagnostician_config=diagnostician_config,

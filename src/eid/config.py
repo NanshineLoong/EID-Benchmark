@@ -138,7 +138,7 @@ class EvaluationConfig:
     Attributes:
         doctor_model: Model config for doctor/diagnostician role
         patient_model: Model config for patient simulator
-        measurement_model: Model config for measurement/test simulator
+        reporter_model: Model config for reporter simulator
         annotator_model: Model config for evaluation judge
         summarizer_model: Model config for summarizer role (SC/REFINE modes)
         diagnostician_model: Model config for diagnostician role (SC/REFINE modes)
@@ -150,7 +150,7 @@ class EvaluationConfig:
 
     doctor_model: ModelConfig
     patient_model: ModelConfig | None = None
-    measurement_model: ModelConfig | None = None
+    reporter_model: ModelConfig | None = None
     annotator_model: ModelConfig | None = None
     summarizer_model: ModelConfig | None = None
     diagnostician_model: ModelConfig | None = None
@@ -165,8 +165,8 @@ class EvaluationConfig:
 
         if self.patient_model is None:
             self.patient_model = ModelConfig.from_string(default_model)
-        if self.measurement_model is None:
-            self.measurement_model = ModelConfig.from_string(default_model)
+        if self.reporter_model is None:
+            self.reporter_model = ModelConfig.from_string(default_model)
         if self.annotator_model is None:
             self.annotator_model = ModelConfig.from_string(default_model)
         if self.summarizer_model is None:

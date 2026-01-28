@@ -27,7 +27,7 @@ class ReactScenario(BaseScenario):
         dataset_name: str,
         doctor_config: "ModelConfig",
         patient_config: "ModelConfig",
-        measurement_config: "ModelConfig",
+        reporter_config: "ModelConfig",
         max_turns: int = 16,
     ) -> None:
         """Initialize ReAct scenario.
@@ -36,13 +36,13 @@ class ReactScenario(BaseScenario):
             dataset_name: Name of the dataset
             doctor_config: Model configuration for doctor agent
             patient_config: Model configuration for patient simulator
-            measurement_config: Model configuration for measurement simulator
+            reporter_config: Model configuration for reporter simulator
             max_turns: Maximum interaction turns
         """
         super().__init__(dataset_name)
         self.doctor_config = doctor_config
         self.patient_config = patient_config
-        self.measurement_config = measurement_config
+        self.reporter_config = reporter_config
         self.max_turns = max_turns
         self.prompts = PromptManager(dataset_name)
 
@@ -80,12 +80,12 @@ class ReactScenario(BaseScenario):
             summarize_threshold=95,
         )
 
-        measurement = create_agent(
-            role_id="measurement",
-            system_prompt=self.prompts.get_measurement_system_prompt().format(
+        reporter = create_agent(
+            role_id="reporter",
+            system_prompt=self.prompts.get_reporter_system_prompt().format(
                 exam_facts=exam_facts_str
             ),
-            config=self.measurement_config,
+            config=self.reporter_config,
             message_window_size=1,
             summarize_threshold=80,
         )
@@ -96,7 +96,7 @@ class ReactScenario(BaseScenario):
         answer = ""
         current_turn = 0
 
-        while current_turn < self.max_turns:
+        while current_turn <= self.max_turns:
             # Doctor turn
             instruction = self.prompts.get_doctor_turn_instruction(
                 current_turns=current_turn,
@@ -124,13 +124,13 @@ class ReactScenario(BaseScenario):
 
             # Route to appropriate simulator
             if action_type == "test":
-                # Measurement turn
-                m_instruction = self.prompts.get_measurement_turn_instruction(action_content)
-                m_response = measurement.step(m_instruction)
-                m_duration = measurement.get_last_duration()
+                # Reporter turn
+                m_instruction = self.prompts.get_reporter_turn_instruction(action_content)
+                m_response = reporter.step(m_instruction)
+                m_duration = reporter.get_last_duration()
 
                 trace.append({
-                    "role_id": "measurement",
+                    "role_id": "reporter",
                     "content": m_response,
                     "duration": m_duration,
                 })
@@ -153,7 +153,7 @@ class ReactScenario(BaseScenario):
         role_records = self._collect_role_records([
             ("doctor", doctor),
             ("patient", patient),
-            ("measurement", measurement),
+            ("reporter", reporter),
         ])
 
         return ScenarioResult(

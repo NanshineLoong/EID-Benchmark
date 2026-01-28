@@ -41,15 +41,34 @@ class Metric(ABC):
             Summary statistics dictionary
         """
         if not results:
-            return {"total_items": 0, "top1_accuracy": 0.0}
+            return {
+                "total_items": 0,
+                "top1_accuracy": 0.0,
+                "avg_information_coverage_rate": 0.0,
+                "avg_patient_coverage": 0.0,
+                "avg_exam_coverage": 0.0,
+            }
 
         correct_count = sum(1 for r in results if r.get("is_correct", False))
         total = len(results)
+
+        avg_info_coverage = sum(
+            r.get("information_coverage_rate", 0.0) for r in results
+        ) / total
+        avg_patient_coverage = sum(
+            r.get("patient_coverage", 0.0) for r in results
+        ) / total
+        avg_exam_coverage = sum(
+            r.get("exam_coverage", 0.0) for r in results
+        ) / total
 
         return {
             "total_items": total,
             "correct_count": correct_count,
             "top1_accuracy": correct_count / total if total > 0 else 0.0,
+            "avg_information_coverage_rate": avg_info_coverage,
+            "avg_patient_coverage": avg_patient_coverage,
+            "avg_exam_coverage": avg_exam_coverage,
             "results": results,
         }
 

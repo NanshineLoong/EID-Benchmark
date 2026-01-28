@@ -28,7 +28,7 @@ def get_scenario(
     dataset_name: str,
     doctor_config: "ModelConfig",  # noqa: F821
     patient_config: "ModelConfig | None" = None,  # noqa: F821
-    measurement_config: "ModelConfig | None" = None,  # noqa: F821
+    reporter_config: "ModelConfig | None" = None,  # noqa: F821
     max_turns: int = 16,
     summarizer_config: "ModelConfig | None" = None,  # noqa: F821
     diagnostician_config: "ModelConfig | None" = None,  # noqa: F821
@@ -41,7 +41,7 @@ def get_scenario(
         dataset_name: Name of the dataset
         doctor_config: Model config for doctor role
         patient_config: Model config for patient simulator
-        measurement_config: Model config for measurement simulator
+        reporter_config: Model config for reporter simulator
         max_turns: Maximum interaction turns
         summarizer_config: Model config for summarizer role (SC/REFINE)
         diagnostician_config: Model config for diagnostician role (SC/REFINE)
@@ -72,8 +72,8 @@ def get_scenario(
     # For roleplay modes, ensure simulator configs are provided
     if patient_config is None:
         patient_config = doctor_config
-    if measurement_config is None:
-        measurement_config = doctor_config
+    if reporter_config is None:
+        reporter_config = doctor_config
 
     # SC and REFINE modes need additional configs
     if mode == "sc":
@@ -81,7 +81,7 @@ def get_scenario(
             dataset_name=dataset_name,
             doctor_config=doctor_config,
             patient_config=patient_config,
-            measurement_config=measurement_config,
+            reporter_config=reporter_config,
             max_turns=max_turns,
             summarizer_config=summarizer_config,
             diagnostician_config=diagnostician_config,
@@ -91,7 +91,7 @@ def get_scenario(
             dataset_name=dataset_name,
             doctor_config=doctor_config,
             patient_config=patient_config,
-            measurement_config=measurement_config,
+            reporter_config=reporter_config,
             max_turns=max_turns,
             summarizer_config=summarizer_config,
             diagnostician_config=diagnostician_config,
@@ -102,6 +102,6 @@ def get_scenario(
         dataset_name=dataset_name,
         doctor_config=doctor_config,
         patient_config=patient_config,
-        measurement_config=measurement_config,
+        reporter_config=reporter_config,
         max_turns=max_turns,
     )
